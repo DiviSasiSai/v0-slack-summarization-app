@@ -1,6 +1,8 @@
-const API_BASE_URL = "https://resentfully-parapsychological-iris.ngrok-free.dev";
+const API_BASE_URL =
+  "https://resentfully-parapsychological-iris.ngrok-free.dev";
 
-export interface WhatsAppMessagePayload {
+// Schema for sending Slack messages to the agent
+export interface SlackMessagePayload {
   device_id: string;
   email: string;
   sender: string;
@@ -10,13 +12,17 @@ export interface WhatsAppMessagePayload {
   group: string;
 }
 
+// Schema for user queries to the agent
 export interface UserMessagePayload {
   device_id: string;
   email: string;
   message: string;
 }
 
-export async function sendSlackMessage(payload: WhatsAppMessagePayload) {
+// Send a Slack message to the agent for processing
+export async function sendSlackMessageToAgent(
+  payload: SlackMessagePayload
+): Promise<{ status: string; message: string }> {
   const response = await fetch(`${API_BASE_URL}/whatsapp-message`, {
     method: "POST",
     headers: {
@@ -33,7 +39,10 @@ export async function sendSlackMessage(payload: WhatsAppMessagePayload) {
   return response.json();
 }
 
-export async function sendUserMessage(payload: UserMessagePayload) {
+// Send user's interactive message to the agent
+export async function sendUserMessage(
+  payload: UserMessagePayload
+): Promise<{ status: string; message: string }> {
   const response = await fetch(`${API_BASE_URL}/user-message`, {
     method: "POST",
     headers: {
@@ -50,7 +59,25 @@ export async function sendUserMessage(payload: UserMessagePayload) {
   return response.json();
 }
 
-export async function sendImageMessage(formData: FormData) {
+// Send an image from Slack to the agent
+export async function sendImageToAgent(
+  deviceId: string,
+  email: string,
+  sender: string,
+  time: string,
+  date: string,
+  group: string,
+  imageFile: File
+): Promise<{ status: string; message: string }> {
+  const formData = new FormData();
+  formData.append("device_id", deviceId);
+  formData.append("email", email);
+  formData.append("sender", sender);
+  formData.append("time", time);
+  formData.append("date", date);
+  formData.append("group", group);
+  formData.append("image", imageFile);
+
   const response = await fetch(`${API_BASE_URL}/image-message`, {
     method: "POST",
     headers: {

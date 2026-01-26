@@ -12,27 +12,25 @@ export interface Channel {
   type: "public" | "private";
   memberCount?: number;
   lastActivity?: string;
+  unreadCount?: number;
 }
 
-export interface Message {
+export interface SlackMessage {
   id: string;
   text: string;
-  userId: string;
-  userName: string;
+  sender: string;
   timestamp: string;
   channelId: string;
+  channelName: string;
+  hasImage?: boolean;
+  imageUrl?: string;
 }
 
-export interface Summary {
+export interface ChatMessage {
   id: string;
-  channelId: string;
-  channelName: string;
+  role: "user" | "assistant" | "system";
   content: string;
-  keyPoints: string[];
-  actionItems: string[];
-  createdAt: string;
-  messageCount: number;
-  timeRange: string;
+  timestamp: string;
 }
 
 export interface Reminder {
@@ -44,12 +42,18 @@ export interface Reminder {
   dueDate: string;
   dueTime: string;
   isCompleted: boolean;
+  isRead: boolean;
   createdAt: string;
+  source: "auto" | "manual";
 }
 
-export interface ChatMessage {
+export interface Summary {
   id: string;
-  role: "user" | "assistant";
+  channelId: string;
+  channelName: string;
   content: string;
-  timestamp: string;
+  keyPoints: string[];
+  actionItems: string[];
+  createdAt: string;
+  messageCount: number;
 }
