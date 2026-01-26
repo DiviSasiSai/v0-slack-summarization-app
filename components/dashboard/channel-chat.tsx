@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react"
+import React from "react";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
-import { sendUserMessage, sendSlackMessageToAgent } from "@/lib/api";
-import type { ChatMessage, Reminder } from "@/lib/types";
+import { sendUserMessage } from "@/lib/api";
+import type { ChatMessage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -20,7 +20,6 @@ import {
   Lock,
   Bell,
   RefreshCw,
-  ImageIcon,
 } from "lucide-react";
 import { NotificationsPanel } from "./notifications-panel";
 
@@ -29,10 +28,8 @@ export function ChannelChat() {
     user,
     selectedChannel,
     setSelectedChannel,
-    chatMessagesByChannel,
     addChatMessage,
     getChatMessages,
-    addReminder,
     reminders,
     showNotifications,
     setShowNotifications,
@@ -52,100 +49,22 @@ export function ChannelChat() {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [chatMessagesByChannel, channelId]);
+  }, [messages]);
 
-  // Simulate incoming Slack messages (in production, use WebSocket or polling)
+  // Add welcome message when channel is first opened
   useEffect(() => {
     if (!selectedChannel || !user) return;
 
-    // Add initial system message if channel is empty
     if (messages.length === 0) {
       const welcomeMessage: ChatMessage = {
         id: `sys_${Date.now()}`,
         role: "system",
-        content: `Connected to #${selectedChannel.name}. I'm monitoring this channel 24/7 and will summarize important discussions, extract action items, and automatically create reminders for you.`,
+        content: `Connected to #${selectedChannel.name}. I'm your AI assistant monitoring this channel 24/7. I'll summarize important discussions and automatically create reminders for action items. Ask me anything about this channel!`,
         timestamp: new Date().toISOString(),
       };
       addChatMessage(channelId, welcomeMessage);
     }
-
-    // Simulate incoming Slack messages every 30 seconds for demo
-    const interval = setInterval(() => {
-      simulateIncomingSlackMessage();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [selectedChannel, user]);
-
-  const simulateIncomingSlackMessage = useCallback(async () => {
-    if (!selectedChannel || !user) return;
-
-    const mockMessages = [
-      { sender: "John", message: "Hey team, reminder that the sprint review is tomorrow at 2 PM" },
-      { sender: "Sarah", message: "Can someone review my PR #234? It's blocking the release" },
-      { sender: "Mike", message: "FYI: The API endpoint for user auth is now live in staging" },
-      { sender: "Lisa", message: "Action item from yesterday's meeting: Update the documentation by Friday" },
-      { sender: "Alex", message: "Quick heads up - I'll be OOO next Monday" },
-    ];
-
-    const randomMessage = mockMessages[Math.floor(Math.random() * mockMessages.length)];
-    const now = new Date();
-
-    // Add Slack message to chat
-    const slackMessage: ChatMessage = {
-      id: `slack_${Date.now()}`,
-      role: "slack",
-      content: randomMessage.message,
-      timestamp: now.toISOString(),
-      sender: randomMessage.sender,
-      channelName: selectedChannel.name,
-    };
-    addChatMessage(channelId, slackMessage);
-
-    // Send to agent for processing
-    try {
-      const response = await sendSlackMessageToAgent({
-        device_id: `web_${user.id}`,
-        email: user.email,
-        sender: randomMessage.sender,
-        message: randomMessage.message,
-        time: now.toLocaleTimeString(),
-        date: now.toLocaleDateString(),
-        group: selectedChannel.name,
-      });
-
-      // If agent responds, add it to chat
-      if (response.response) {
-        const aiMessage: ChatMessage = {
-          id: `ai_${Date.now()}`,
-          role: "assistant",
-          content: response.response,
-          timestamp: new Date().toISOString(),
-        };
-        addChatMessage(channelId, aiMessage);
-      }
-
-      // If agent creates a reminder, add it
-      if (response.reminder) {
-        const newReminder: Reminder = {
-          id: `rem_${Date.now()}`,
-          title: response.reminder.title,
-          description: response.reminder.description,
-          channelId: selectedChannel.id,
-          channelName: selectedChannel.name,
-          dueDate: response.reminder.dueDate,
-          dueTime: response.reminder.dueTime,
-          isCompleted: false,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-          source: "auto",
-        };
-        addReminder(newReminder);
-      }
-    } catch (error) {
-      console.log("[v0] Failed to send Slack message to agent:", error);
-    }
-  }, [selectedChannel, user, channelId, addChatMessage, addReminder]);
+  }, [selectedChannel, user, messages.length, addChatMessage, channelId]);
 
   const handleSendMessage = async () => {
     if (!input.trim() || !user || !selectedChannel) return;
@@ -164,45 +83,28 @@ export function ChannelChat() {
     addChatMessage(channelId, userMessage);
 
     try {
-      // Send to agent
+      // Send to agent using the correct schema
       const response = await sendUserMessage({
         device_id: `web_${user.id}`,
         email: user.email,
         message: text,
       });
 
-      // Add agent response
+      // Add agent response - using 'message' field from response
       const aiMessage: ChatMessage = {
         id: `ai_${Date.now()}`,
         role: "assistant",
-        content: response.response || "I processed your request.",
+        content: response.message || "I processed your request.",
         timestamp: new Date().toISOString(),
       };
       addChatMessage(channelId, aiMessage);
-
-      // Handle auto-generated reminder
-      if (response.reminder) {
-        const newReminder: Reminder = {
-          id: `rem_${Date.now()}`,
-          title: response.reminder.title,
-          description: response.reminder.description,
-          channelId: selectedChannel.id,
-          channelName: selectedChannel.name,
-          dueDate: response.reminder.dueDate,
-          dueTime: response.reminder.dueTime,
-          isCompleted: false,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-          source: "auto",
-        };
-        addReminder(newReminder);
-      }
     } catch (error) {
       console.log("[v0] Failed to send message:", error);
       const errorMessage: ChatMessage = {
         id: `err_${Date.now()}`,
         role: "assistant",
-        content: "Sorry, I couldn't process your request. Please try again.",
+        content:
+          "Sorry, I couldn't connect to the server. Please check if the API is running and try again.",
         timestamp: new Date().toISOString(),
       };
       addChatMessage(channelId, errorMessage);
@@ -225,9 +127,18 @@ export function ChannelChat() {
 
   // Quick action buttons
   const quickActions = [
-    { label: "Summarize today", message: "Summarize today's messages in this channel" },
-    { label: "Action items", message: "What are the action items from recent discussions?" },
-    { label: "Key decisions", message: "What decisions were made recently?" },
+    {
+      label: "Summarize today",
+      message: "Summarize today's messages in this channel",
+    },
+    {
+      label: "Action items",
+      message: "What are the action items from recent discussions?",
+    },
+    {
+      label: "Key decisions",
+      message: "What decisions were made recently?",
+    },
   ];
 
   return (
@@ -269,11 +180,11 @@ export function ChannelChat() {
         </Button>
       </header>
 
-      {/* Messages */}
+      {/* Messages - Only showing user and agent messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="mx-auto max-w-3xl space-y-4">
           {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} user={user} />
+            <MessageBubble key={message.id} message={message} />
           ))}
           {isLoading && (
             <div className="flex items-start gap-3">
@@ -282,7 +193,9 @@ export function ChannelChat() {
               </div>
               <div className="flex items-center gap-2 rounded-lg bg-muted px-4 py-3">
                 <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Thinking...</span>
+                <span className="text-sm text-muted-foreground">
+                  Thinking...
+                </span>
               </div>
             </div>
           )}
@@ -336,13 +249,8 @@ export function ChannelChat() {
   );
 }
 
-function MessageBubble({
-  message,
-  user,
-}: {
-  message: ChatMessage;
-  user: { name: string; avatar?: string } | null;
-}) {
+function MessageBubble({ message }: { message: ChatMessage }) {
+  // System messages (welcome)
   if (message.role === "system") {
     return (
       <div className="flex justify-center">
@@ -353,40 +261,12 @@ function MessageBubble({
     );
   }
 
-  if (message.role === "slack") {
-    return (
-      <div className="flex items-start gap-3">
-        <Avatar className="h-8 w-8 shrink-0 border border-border">
-          <AvatarFallback className="bg-secondary text-xs text-secondary-foreground">
-            {message.sender?.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-foreground">{message.sender}</span>
-            <span className="text-xs text-muted-foreground">
-              {new Date(message.timestamp).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-foreground">{message.content}</p>
-          {message.hasImage && (
-            <div className="mt-2 flex items-center gap-2 rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
-              <ImageIcon className="h-3 w-3" />
-              Image attached
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   const isUser = message.role === "user";
 
   return (
-    <div className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
+    <div
+      className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}
+    >
       {isUser ? (
         <Avatar className="h-8 w-8 shrink-0">
           <AvatarFallback className="bg-secondary text-secondary-foreground">
@@ -403,7 +283,9 @@ function MessageBubble({
           isUser ? "bg-primary text-primary-foreground" : "bg-muted"
         }`}
       >
-        <p className={`whitespace-pre-wrap text-sm ${isUser ? "" : "text-foreground"}`}>
+        <p
+          className={`whitespace-pre-wrap text-sm ${isUser ? "" : "text-foreground"}`}
+        >
           {message.content}
         </p>
         <p

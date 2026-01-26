@@ -22,7 +22,7 @@ export interface UserMessagePayload {
 // Send a Slack message to the agent for processing
 export async function sendSlackMessageToAgent(
   payload: SlackMessagePayload
-): Promise<{ response?: string; reminder?: ReminderFromAgent }> {
+): Promise<{ status: string; message: string }> {
   const response = await fetch(`${API_BASE_URL}/whatsapp-message`, {
     method: "POST",
     headers: {
@@ -42,7 +42,7 @@ export async function sendSlackMessageToAgent(
 // Send user's interactive message to the agent
 export async function sendUserMessage(
   payload: UserMessagePayload
-): Promise<{ response: string; reminder?: ReminderFromAgent }> {
+): Promise<{ status: string; message: string }> {
   const response = await fetch(`${API_BASE_URL}/user-message`, {
     method: "POST",
     headers: {
@@ -68,7 +68,7 @@ export async function sendImageToAgent(
   date: string,
   group: string,
   imageFile: File
-): Promise<{ response?: string; reminder?: ReminderFromAgent }> {
+): Promise<{ status: string; message: string }> {
   const formData = new FormData();
   formData.append("device_id", deviceId);
   formData.append("email", email);
@@ -91,12 +91,4 @@ export async function sendImageToAgent(
   }
 
   return response.json();
-}
-
-// Type for reminders returned from the agent
-export interface ReminderFromAgent {
-  title: string;
-  description: string;
-  dueDate: string;
-  dueTime: string;
 }

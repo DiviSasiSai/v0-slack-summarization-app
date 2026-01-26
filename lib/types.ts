@@ -28,13 +28,9 @@ export interface SlackMessage {
 
 export interface ChatMessage {
   id: string;
-  role: "user" | "assistant" | "system" | "slack";
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: string;
-  sender?: string;
-  channelName?: string;
-  hasImage?: boolean;
-  imageUrl?: string;
 }
 
 export interface Reminder {
