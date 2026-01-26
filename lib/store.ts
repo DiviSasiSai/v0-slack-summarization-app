@@ -8,6 +8,7 @@ interface AppState {
   // User state
   user: User | null;
   setUser: (user: User | null) => void;
+  logout: () => void;
 
   // Channels
   channels: Channel[];
@@ -43,6 +44,13 @@ export const useAppStore = create<AppState>()(
       // User state
       user: null,
       setUser: (user) => set({ user }),
+      logout: () =>
+        set({
+          user: null,
+          selectedChannel: null,
+          chatMessagesByChannel: {},
+          reminders: [],
+        }),
 
       // Channels
       channels: [],
@@ -113,6 +121,8 @@ export const useAppStore = create<AppState>()(
       name: "slacksum-storage",
       partialize: (state) => ({
         user: state.user,
+        selectedChannel: state.selectedChannel,
+        chatMessagesByChannel: state.chatMessagesByChannel,
         reminders: state.reminders,
       }),
     }

@@ -1,8 +1,7 @@
 "use client";
 
-import React from "react";
-
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { sendUserMessage } from "@/lib/api";
 import type { ChatMessage } from "@/lib/types";
@@ -15,24 +14,27 @@ import {
   Send,
   Sparkles,
   User,
-  ArrowLeft,
   Hash,
   Lock,
   Bell,
   RefreshCw,
+  LogOut,
+  ArrowLeft,
 } from "lucide-react";
 import { NotificationsPanel } from "./notifications-panel";
 
 export function ChannelChat() {
+  const router = useRouter();
   const {
     user,
     selectedChannel,
-    setSelectedChannel,
     addChatMessage,
     getChatMessages,
     reminders,
     showNotifications,
     setShowNotifications,
+    logout,
+    setSelectedChannel,
   } = useAppStore();
 
   const [input, setInput] = useState("");
@@ -146,9 +148,6 @@ export function ChannelChat() {
       {/* Header */}
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={handleBack}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
             {selectedChannel?.type === "private" ? (
               <Lock className="h-5 w-5 text-accent" />
@@ -165,19 +164,33 @@ export function ChannelChat() {
             </p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="relative bg-transparent"
-          onClick={() => setShowNotifications(true)}
-        >
-          <Bell className="h-4 w-4" />
-          {unreadReminders.length > 0 && (
-            <Badge className="absolute -right-2 -top-2 h-5 w-5 rounded-full bg-destructive p-0 text-xs text-destructive-foreground">
-              {unreadReminders.length}
-            </Badge>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="relative bg-transparent"
+            onClick={() => setShowNotifications(true)}
+          >
+            <Bell className="h-4 w-4" />
+            {unreadReminders.length > 0 && (
+              <Badge className="absolute -right-2 -top-2 h-5 w-5 rounded-full bg-destructive p-0 text-xs text-destructive-foreground">
+                {unreadReminders.length}
+              </Badge>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive"
+            onClick={() => {
+              logout();
+              router.push("/");
+            }}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
       </header>
 
       {/* Messages - Only showing user and agent messages */}
