@@ -1,20 +1,30 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
-import { ChannelsView } from "@/components/dashboard/channels-view";
-import { SummariesView } from "@/components/dashboard/summaries-view";
-import { RemindersView } from "@/components/dashboard/reminders-view";
-import { ChatView } from "@/components/dashboard/chat-view";
+import { ChannelSelection } from "@/components/dashboard/channel-selection";
+import { ChannelChat } from "@/components/dashboard/channel-chat";
 
 export default function DashboardPage() {
-  const { activeView } = useAppStore();
+  const router = useRouter();
+  const { user, selectedChannel } = useAppStore();
 
-  return (
-    <div className="flex h-screen flex-col">
-      {activeView === "channels" && <ChannelsView />}
-      {activeView === "summaries" && <SummariesView />}
-      {activeView === "reminders" && <RemindersView />}
-      {activeView === "chat" && <ChatView />}
-    </div>
-  );
+  useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!user) {
+      router.push("/");
+    }
+  }, [user, router]);
+
+  if (!user) {
+    return null;
+  }
+
+  // Show channel chat if a channel is selected, otherwise show channel selection
+  if (selectedChannel) {
+    return <ChannelChat />;
+  }
+
+  return <ChannelSelection />;
 }
