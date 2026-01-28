@@ -1,59 +1,37 @@
 export interface User {
-  id: string;
-  email: string;
-  name: string;
-  avatar?: string;
-  slackAccessToken?: string;
+  id: string
+  email?: string
+  name: string
+  avatar?: string
+  teamName?: string
 }
 
 export interface Channel {
-  id: string;
-  name: string;
-  type: "public" | "private";
-  memberCount?: number;
-  lastActivity?: string;
-  unreadCount?: number;
+  id: string
+  name: string
+  type: "public" | "private"
+  memberCount?: number
+  topic?: string
+  purpose?: string
 }
 
 export interface SlackMessage {
-  id: string;
-  text: string;
-  sender: string;
-  timestamp: string;
-  channelId: string;
-  channelName: string;
-  hasImage?: boolean;
-  imageUrl?: string;
+  ts: string
+  user: string
+  user_name?: string
+  text: string
+  timestamp: Date
 }
 
 export interface ChatMessage {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  timestamp: string;
+  id: string
+  role: "user" | "assistant" | "system"
+  content: string
+  timestamp: string
+  slackMessages?: SlackMessage[]
 }
 
-export interface Reminder {
-  id: string;
-  title: string;
-  description: string;
-  channelId?: string;
-  channelName?: string;
-  dueDate: string;
-  dueTime: string;
-  isCompleted: boolean;
-  isRead: boolean;
-  createdAt: string;
-  source: "auto" | "manual";
-}
-
-export interface Summary {
-  id: string;
-  channelId: string;
-  channelName: string;
-  content: string;
-  keyPoints: string[];
-  actionItems: string[];
-  createdAt: string;
-  messageCount: number;
+export interface AuthUser {
+  authenticated: boolean
+  user?: User
 }

@@ -1,94 +1,63 @@
-const API_BASE_URL =
-  "https://resentfully-parapsychological-iris.ngrok-free.dev";
+// API client for Slack Summarization App
 
-// Schema for sending Slack messages to the agent
-export interface SlackMessagePayload {
-  device_id: string;
-  email: string;
-  sender: string;
-  message: string;
-  time: string;
-  date: string;
-  group: string;
+export interface AgentChatRequest {
+  channelId: string
+  channelName: string
+  messages: Array<{
+    ts: string
+    user: string
+    user_name?: string
+    text: string
+    timestamp: Date
+  }>
+  userQuery?: string
+  deviceId?: string
 }
 
-// Schema for user queries to the agent
-export interface UserMessagePayload {
-  device_id: string;
-  email: string;
-  message: string;
+export interface AgentChatResponse {
+  response: string
+  messagesProcessed: number
+  shouldNotify?: boolean
+  notificationTitle?: string
+  notificationBody?: string
 }
 
-// Send a Slack message to the agent for processing
-export async function sendSlackMessageToAgent(
-  payload: SlackMessagePayload
-): Promise<{ status: string; message: string }> {
-  const response = await fetch(`${API_BASE_URL}/whatsapp-message`, {
+export async function sendAgentChat(request: AgentChatRequest): Promise<AgentChatResponse> {
+  const response = await fetch("/api/agent/chat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "ngrok-skip-browser-warning": "true",
     },
-    body: JSON.stringify(payload),
-  });
+    body: JSON.stringify(request),
+  })
 
   if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+    const error = await response.json().catch(() => ({ error: "Unknown error" }))
+    throw new Error(error.error || "Failed to send message to agent")
   }
 
-  return response.json();
+  return response.json()
 }
 
-// Send user's interactive message to the agent
-export async function sendUserMessage(
-  payload: UserMessagePayload
-): Promise<{ status: string; message: string }> {
-  const response = await fetch(`${API_BASE_URL}/user-message`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "ngrok-skip-browser-warning": "true",
-    },
-    body: JSON.stringify(payload),
-  });
-
+export async function fetchSlackChannels() {
+  const response = await fetch("/api/slack/channels")
   if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+    throw new Error("Failed to fetch channels")
   }
-
-  return response.json();
+  return response.json()
 }
 
-// Send an image from Slack to the agent
-export async function sendImageToAgent(
-  deviceId: string,
-  email: string,
-  sender: string,
-  time: string,
-  date: string,
-  group: string,
-  imageFile: File
-): Promise<{ status: string; message: string }> {
-  const formData = new FormData();
-  formData.append("device_id", deviceId);
-  formData.append("email", email);
-  formData.append("sender", sender);
-  formData.append("time", time);
-  formData.append("date", date);
-  formData.append("group", group);
-  formData.append("image", imageFile);
-
-  const response = await fetch(`${API_BASE_URL}/image-message`, {
-    method: "POST",
-    headers: {
-      "ngrok-skip-browser-warning": "true",
-    },
-    body: formData,
-  });
-
+export async function fetchSlackMessages(channelId: string, since?: string) {
+  const params = new URLSearchParams({ channelId })
+  if (since) params.append("since", since)
+  
+  const response = await fetch(`/api/slack/messages?${params}`)
   if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+    throw new Error("Failed to fetch messages")
   }
+  return response.json()
+}
 
-  return response.json();
+export async function logout() {
+  await fetch("/api/auth/logout", { method: "POST" })
 }
