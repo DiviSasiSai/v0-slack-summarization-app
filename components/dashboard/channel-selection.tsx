@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Hash, Lock, Users, Sparkles, MessageSquare, RefreshCw, LogOut, Bell, BellOff } from "lucide-react"
+import { Hash, Lock, Users, Sparkles, MessageSquare, RefreshCw, LogOut, Bell } from "lucide-react"
 import { usePushNotifications } from "@/hooks/use-push-notifications"
 import { useRouter } from "next/navigation"
 

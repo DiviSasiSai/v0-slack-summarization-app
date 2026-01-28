@@ -138,19 +138,19 @@ export class SlackClient {
 export function getSlackOAuthUrl(state: string): string {
   const clientId = process.env.SLACK_CLIENT_ID
   const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/slack/callback`
-  const scopes = [
+  
+  // User scopes - these are for the user token
+  const userScopes = [
     "channels:read",
     "channels:history",
     "groups:read",
     "groups:history",
     "users:read",
-    "users:read.email",
-    "team:read",
   ].join(",")
 
   const url = new URL("https://slack.com/oauth/v2/authorize")
   url.searchParams.append("client_id", clientId!)
-  url.searchParams.append("scope", scopes)
+  url.searchParams.append("user_scope", userScopes)
   url.searchParams.append("redirect_uri", redirectUri)
   url.searchParams.append("state", state)
 
