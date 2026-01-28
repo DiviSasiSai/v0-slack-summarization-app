@@ -1,16 +1,18 @@
 import React from "react"
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { NotificationProvider } from '@/components/notification-provider'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'SlackSum - AI Slack Summarization & Reminders',
-  description: 'Summarize your Slack channels with AI and set smart reminders',
+  title: 'SlackSum - AI Slack Summarization',
+  description: 'Summarize your Slack channels with AI and receive push notifications for important updates',
   generator: 'v0.app',
+  manifest: '/manifest.json',
   icons: {
     icon: [
       {
@@ -30,6 +32,12 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  themeColor: '#0f172a',
+  width: 'device-width',
+  initialScale: 1,
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,7 +46,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased`}>
-        {children}
+        <NotificationProvider>
+          {children}
+        </NotificationProvider>
         <Analytics />
       </body>
     </html>

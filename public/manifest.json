@@ -1,0 +1,21 @@
+{
+  "name": "SlackSum - AI Slack Summarization",
+  "short_name": "SlackSum",
+  "description": "Summarize your Slack channels with AI and receive push notifications",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

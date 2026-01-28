@@ -1,38 +1,73 @@
-"use client";
+"use client"
 
-import React from "react"
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SlackIcon } from "@/components/icons/slack-icon";
-import { useAppStore } from "@/lib/store";
-import { MessageSquare, Bell, Sparkles, Zap } from "lucide-react";
+import React, { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { SlackIcon } from "@/components/icons/slack-icon"
+import { useAppStore } from "@/lib/store"
+import { MessageSquare, Bell, Sparkles, Zap, AlertCircle } from "lucide-react"
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { setUser } = useAppStore();
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { setUser, user } = useAppStore()
+  const [isLoading, setIsLoading] = useState(false)
+  const [isChecking, setIsChecking] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSlackLogin = async () => {
-    setIsLoading(true);
-    
-    // Simulate Slack OAuth flow
-    // In production, this would redirect to Slack's OAuth endpoint
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    // Mock user data after OAuth
-    setUser({
-      id: "user_123",
-      email: "demo@example.com",
-      name: "Demo User",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=demo",
-      slackAccessToken: "xoxb-mock-token",
-    });
-    
-    router.push("/dashboard");
-  };
+  // Check if already authenticated
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const response = await fetch("/api/auth/me")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.authenticated) {
+            setUser({
+              id: data.user.id,
+              name: data.user.name,
+              email: data.user.email,
+              avatar: data.user.image,
+              teamName: data.user.teamName,
+            })
+            router.push("/dashboard")
+            return
+          }
+        }
+      } catch {
+        // Not authenticated
+      } finally {
+        setIsChecking(false)
+      }
+    }
+
+    // Check for error in URL
+    const errorParam = searchParams.get("error")
+    if (errorParam) {
+      setError(getErrorMessage(errorParam))
+    }
+
+    checkAuth()
+  }, [router, searchParams, setUser])
+
+  const handleSlackLogin = () => {
+    setIsLoading(true)
+    setError(null)
+    // Redirect to Slack OAuth
+    window.location.href = "/api/auth/slack"
+  }
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex items-center gap-2">
+          <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-muted-foreground">Checking authentication...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -58,9 +93,19 @@ export default function LoginPage() {
             </h1>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground text-pretty">
               Connect your Slack workspace to get AI-powered summaries of your channels,
-              set smart reminders, and never miss important discussions.
+              receive push notifications, and never miss important discussions.
             </p>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mx-auto mb-6 max-w-md">
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <p>{error}</p>
+              </div>
+            </div>
+          )}
 
           {/* Login Card */}
           <div className="mx-auto max-w-md">
@@ -106,8 +151,8 @@ export default function LoginPage() {
             />
             <FeatureCard
               icon={<Bell className="h-6 w-6" />}
-              title="Smart Reminders"
-              description="Set reminders based on important discussions and action items"
+              title="Push Notifications"
+              description="Receive Chrome notifications for important updates and action items"
             />
             <FeatureCard
               icon={<Zap className="h-6 w-6" />}
@@ -125,7 +170,7 @@ export default function LoginPage() {
         </p>
       </footer>
     </div>
-  );
+  )
 }
 
 function FeatureCard({
@@ -133,9 +178,9 @@ function FeatureCard({
   title,
   description,
 }: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
+  icon: React.ReactNode
+  title: string
+  description: string
 }) {
   return (
     <Card className="border-border bg-card/50">
@@ -147,5 +192,15 @@ function FeatureCard({
         <p className="text-sm text-muted-foreground">{description}</p>
       </CardContent>
     </Card>
-  );
+  )
+}
+
+function getErrorMessage(error: string): string {
+  const errorMessages: Record<string, string> = {
+    access_denied: "You denied access to the Slack workspace",
+    invalid_state: "Invalid OAuth state. Please try again.",
+    missing_params: "Missing OAuth parameters. Please try again.",
+    auth_failed: "Authentication failed. Please try again.",
+  }
+  return errorMessages[error] || "An error occurred. Please try again."
 }
